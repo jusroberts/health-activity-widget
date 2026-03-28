@@ -4,6 +4,7 @@
     <!-- Health Connect read permissions -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 
     <!-- Required to check if Health Connect is installed -->
     <queries>

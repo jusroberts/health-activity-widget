@@ -16,6 +16,12 @@ class HealthConnectRepository(private val context: Context) {
         val REQUIRED_PERMISSIONS = setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
             HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+            "android.permission.health.READ_HEALTH_DATA_HISTORY",
+        )
+
+        val CORE_PERMISSIONS = setOf(
+            HealthPermission.getReadPermission(StepsRecord::class),
+            HealthPermission.getReadPermission(ExerciseSessionRecord::class),
         )
 
         private const val STEPS_THRESHOLD = 10_000L
@@ -102,7 +108,14 @@ class HealthConnectRepository(private val context: Context) {
         if (!isAvailable()) return false
         return client.permissionController
             .getGrantedPermissions()
-            .containsAll(REQUIRED_PERMISSIONS)
+            .containsAll(CORE_PERMISSIONS)
+    }
+
+    suspend fun hasHistoryPermission(): Boolean {
+        if (!isAvailable()) return false
+        return client.permissionController
+            .getGrantedPermissions()
+            .contains("android.permission.health.READ_HEALTH_DATA_HISTORY")
     }
 
     /** Returns the distinct exercise types recorded in the last [weeks] weeks, sorted by name. */
@@ -110,12 +123,16 @@ class HealthConnectRepository(private val context: Context) {
         if (!hasPermissions()) return emptyList()
         val filter = buildFilter(weeks)
         return try {
-            client.readRecords(ReadRecordsRequest(ExerciseSessionRecord::class, filter))
-                .records
-                .map { it.exerciseType }
-                .toSortedSet()
-                .map { type -> type to exerciseTypeName(type) }
-                .sortedBy { it.second }
+            val types = mutableSetOf<Int>()
+            var pageToken: String? = null
+            do {
+                val response = client.readRecords(
+                    ReadRecordsRequest(ExerciseSessionRecord::class, filter, pageToken = pageToken)
+                )
+                response.records.forEach { types.add(it.exerciseType) }
+                pageToken = response.pageToken
+            } while (pageToken != null)
+            types.map { type -> type to exerciseTypeName(type) }.sortedBy { it.second }
         } catch (_: Exception) {
             emptyList()
         }
@@ -143,23 +160,35 @@ class HealthConnectRepository(private val context: Context) {
         try {
             if (showSteps) {
                 val dailySteps = mutableMapOf<LocalDate, Long>()
-                client.readRecords(ReadRecordsRequest(StepsRecord::class, filter))
-                    .records.forEach { record ->
+                var stepsToken: String? = null
+                do {
+                    val response = client.readRecords(
+                        ReadRecordsRequest(StepsRecord::class, filter, pageToken = stepsToken)
+                    )
+                    response.records.forEach { record ->
                         val date = record.startTime.atZone(zone).toLocalDate()
                         dailySteps[date] = (dailySteps[date] ?: 0L) + record.count
                     }
+                    stepsToken = response.pageToken
+                } while (stepsToken != null)
                 dailySteps.forEach { (date, steps) ->
                     if (steps >= STEPS_THRESHOLD) add(date, WidgetPreferences.STEPS_KEY)
                 }
             }
 
-            client.readRecords(ReadRecordsRequest(ExerciseSessionRecord::class, filter))
-                .records.forEach { record ->
+            var exerciseToken: String? = null
+            do {
+                val response = client.readRecords(
+                    ReadRecordsRequest(ExerciseSessionRecord::class, filter, pageToken = exerciseToken)
+                )
+                response.records.forEach { record ->
                     if (record.exerciseType !in disabledExerciseTypes) {
                         val date = record.startTime.atZone(zone).toLocalDate()
                         add(date, WidgetPreferences.exerciseKey(record.exerciseType))
                     }
                 }
+                exerciseToken = response.pageToken
+            } while (exerciseToken != null)
         } catch (_: Exception) {
             // Return partial results
         }

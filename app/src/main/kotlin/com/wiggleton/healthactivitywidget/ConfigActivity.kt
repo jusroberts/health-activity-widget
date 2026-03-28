@@ -2,6 +2,7 @@ package com.wiggleton.healthactivitywidget
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -36,7 +37,10 @@ class ConfigActivity : ComponentActivity() {
         val exerciseLoading   = findViewById<ProgressBar>(R.id.exercise_loading)
         val exerciseContainer = findViewById<LinearLayout>(R.id.exercise_container)
         val noExerciseLabel   = findViewById<TextView>(R.id.no_exercise_label)
-        val saveButton        = findViewById<Button>(R.id.save_button)
+        val historyWarning      = findViewById<TextView>(R.id.history_permission_warning)
+        val backgroundValue     = findViewById<TextView>(R.id.background_value)
+        val refreshButton       = findViewById<Button>(R.id.refresh_button)
+        val saveButton          = findViewById<Button>(R.id.save_button)
 
         // Steps row (static — always present)
         stepsContainer.addView(
@@ -47,6 +51,27 @@ class ConfigActivity : ComponentActivity() {
                 onToggle = { pendingToggles[WidgetPreferences.STEPS_KEY] = it },
             )
         )
+
+        // Background style — cycles through Transparent → Dark → Light on tap
+        var pendingBackground = prefs.backgroundStyle
+        fun backgroundLabel(style: Int) = when (style) {
+            WidgetPreferences.BACKGROUND_DARK  -> "Dark"
+            WidgetPreferences.BACKGROUND_LIGHT -> "Light"
+            else                               -> "None"
+        }
+        backgroundValue.text = backgroundLabel(pendingBackground)
+        findViewById<View>(R.id.background_row).setOnClickListener {
+            pendingBackground = (pendingBackground + 1) % 3
+            backgroundValue.text = backgroundLabel(pendingBackground)
+        }
+
+        historyWarning.setOnClickListener {
+            startActivity(
+                Intent(this@ConfigActivity, PermissionActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            )
+        }
 
         // Exercise rows — loaded asynchronously from Health Connect
         CoroutineScope(Dispatchers.IO).launch {
@@ -74,7 +99,29 @@ class ConfigActivity : ComponentActivity() {
             }
         }
 
+        refreshButton.setOnClickListener {
+            refreshButton.isEnabled = false
+            refreshButton.text = "Refreshing…"
+            val manager   = AppWidgetManager.getInstance(this)
+            val component = ComponentName(this, HealthWidgetProvider::class.java)
+            CoroutineScope(Dispatchers.IO).launch {
+                manager.getAppWidgetIds(component).forEach { id ->
+                    HealthWidgetProvider.updateWidget(this@ConfigActivity, manager, id)
+                }
+                withContext(Dispatchers.Main) {
+                    refreshButton.text = "Refresh Now"
+                    refreshButton.isEnabled = true
+                }
+            }
+        }
+
+        // Re-checked in onResume so it disappears after returning from PermissionActivity
+        checkHistoryPermission(historyWarning)
+
         saveButton.setOnClickListener {
+            // Persist background style
+            prefs.backgroundStyle = pendingBackground
+
             // Persist color changes
             pendingColors.forEach { (key, color) -> prefs.setActivityColor(key, color) }
 
@@ -97,6 +144,20 @@ class ConfigActivity : ComponentActivity() {
                 }
             }
             finish()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkHistoryPermission(findViewById(R.id.history_permission_warning))
+    }
+
+    private fun checkHistoryPermission(warning: TextView) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val hasHistory = HealthConnectRepository(this@ConfigActivity).hasHistoryPermission()
+            withContext(Dispatchers.Main) {
+                warning.visibility = if (hasHistory) View.GONE else View.VISIBLE
+            }
         }
     }
 

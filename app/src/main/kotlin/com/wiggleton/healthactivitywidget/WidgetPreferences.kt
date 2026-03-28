@@ -14,6 +14,10 @@ class WidgetPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_SHOW_STEPS, true)
         set(value) = prefs.edit { putBoolean(KEY_SHOW_STEPS, value) }
 
+    var backgroundStyle: Int
+        get() = prefs.getInt(KEY_BACKGROUND_STYLE, BACKGROUND_TRANSPARENT)
+        set(value) = prefs.edit { putInt(KEY_BACKGROUND_STYLE, value) }
+
     /** Exercise type IDs the user has explicitly turned off. All others are shown. */
     var disabledExerciseTypes: Set<Int>
         get() {
@@ -84,6 +88,11 @@ class WidgetPreferences(context: Context) {
         private const val KEY_DISABLED_EXERCISE_TYPES = "disabled_exercise_types"
         private const val KEY_ACTIVITY_CACHE = "activity_cache"
         private const val KEY_NEXT_COLOR_INDEX = "next_color_index"
+        private const val KEY_BACKGROUND_STYLE = "background_style"
+
+        const val BACKGROUND_TRANSPARENT = 0
+        const val BACKGROUND_DARK = 1
+        const val BACKGROUND_LIGHT = 2
         private const val COLOR_NOT_SET = Int.MIN_VALUE
 
         const val STEPS_KEY = "steps"

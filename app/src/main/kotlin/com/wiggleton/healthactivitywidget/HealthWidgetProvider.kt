@@ -90,7 +90,8 @@ class HealthWidgetProvider : AppWidgetProvider() {
                 val cached = prefs.loadActivityCache()
                 if (cached.isNotEmpty()) {
                     val cachedBitmap = GridRenderer.render(
-                        toDayColors(cached, prefs), WEEKS, bitmapWidth(options), bitmapHeight(options)
+                        toDayColors(cached, prefs), WEEKS, bitmapWidth(options), bitmapHeight(options),
+                        prefs.backgroundStyle,
                     )
                     views.setImageViewBitmap(R.id.grid_image, cachedBitmap)
                     appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -106,7 +107,7 @@ class HealthWidgetProvider : AppWidgetProvider() {
                 }
             }
 
-            val bitmap = GridRenderer.render(dayColors, WEEKS, bitmapWidth(options), bitmapHeight(options))
+            val bitmap = GridRenderer.render(dayColors, WEEKS, bitmapWidth(options), bitmapHeight(options), prefs.backgroundStyle)
             views.setImageViewBitmap(R.id.grid_image, bitmap)
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
