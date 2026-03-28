@@ -14,9 +14,9 @@ Categories:
 
 License: MIT
 
-AuthorName: Justin Wiggleton
-SourceCode: https://github.com/YOURUSER/health-activity-widget
-IssueTracker: https://github.com/YOURUSER/health-activity-widget/issues
+AuthorName: Justin Roberts
+SourceCode: https://github.com/jusroberts/health-activity-widget
+IssueTracker: https://github.com/jusroberts/health-activity-widget/issues
 
 AutoName: Health Activity Widget
 Summary: Visualise your Health Connect activity as a contribution calendar grid.
@@ -32,7 +32,7 @@ Description: |-
   All data stays on your device. No internet permission, no ads, no tracking.
 
 RepoType: git
-Repo: https://github.com/YOURUSER/health-activity-widget
+Repo: https://github.com/jusroberts/health-activity-widget
 
 Builds:
   - versionName: '1.0'
