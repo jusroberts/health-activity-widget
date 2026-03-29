@@ -49,7 +49,7 @@ SIGNED="app/build/outputs/apk/release/${APK_NAME}"
 if command -v apksigner &>/dev/null; then
     APKSIGNER="apksigner"
 elif [[ -n "${ANDROID_HOME:-}" ]]; then
-    APKSIGNER=$(ls "${ANDROID_HOME}/build-tools"/*/apksigner 2>/dev/null | sort -V | tail -1)
+    APKSIGNER=$(find "${ANDROID_HOME}/Sdk/build-tools/" -name apksigner 2>/dev/null | sort -V | tail -1)
     [[ -z "$APKSIGNER" ]] && { echo "Error: apksigner not found in ANDROID_HOME."; exit 1; }
 else
     echo "Error: apksigner not found. Set ANDROID_HOME or add apksigner to PATH."
