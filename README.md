@@ -7,7 +7,7 @@ Each column is a week, each row a day of the week. Cells light up when you hit y
 - **Step goal** — 10,000 steps/day
 - **Exercise sessions** — any recorded exercise type
 
-Days with multiple activity types show colour bands. The widget refreshes hourly in the background and caches the last result so it never shows a blank grid on wake.
+Days with multiple activity types show colour bands. The widget refreshes hourly in the background. 
 
 ## Features
 
