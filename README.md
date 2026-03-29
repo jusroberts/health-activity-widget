@@ -39,7 +39,7 @@ Any stored activities in the time range should then be loaded into the app. Once
 > **Note for de-Googled ROMs:** Health Connect is a Google app. If it is not installed, the widget will display a prompt to grant permissions that cannot be fulfilled.
 
 ## Building
-
+I usually build this with android sdk v36.x or v37
 ```bash
 ./gradlew assembleRelease
 ```
