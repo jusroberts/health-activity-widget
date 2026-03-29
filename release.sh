@@ -72,8 +72,14 @@ echo "    Signature verified."
 echo "==> Updating versionName in build.gradle.kts..."
 sed -i "s/versionName = \".*\"/versionName = \"${VERSION}\"/" app/build.gradle.kts
 
+echo "==> Updating fdroid-metadata.yml..."
+VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | grep -o '[0-9]*')
+sed -i "s/versionName: '.*'/versionName: '${VERSION}'/" fdroid-metadata.yml
+sed -i "s/versionCode: .*/versionCode: ${VERSION_CODE}/" fdroid-metadata.yml
+sed -i "s/commit: .*/commit: ${TAG}/" fdroid-metadata.yml
+
 echo "==> Committing version bump and tagging ${TAG}..."
-git add app/build.gradle.kts
+git add app/build.gradle.kts fdroid-metadata.yml
 git diff --cached --quiet || git commit -m "Release ${TAG}"
 git tag -a "$TAG" -m "Release ${TAG}"
 
