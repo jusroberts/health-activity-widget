@@ -2,7 +2,7 @@
 #
 # Steps to submit:
 #   1. Fork https://gitlab.com/fdroid/fdroiddata
-#   2. Copy this file to metadata/com.wiggleton.healthactivitywidget.yml
+#   2. Copy this file to metadata/com.wiggletonabbey.healthactivitywidget.yml
 #   3. Update SourceCode, IssueTracker, and Repo to your actual GitHub/GitLab URL
 #   4. Tag your release commit as v1.0 (git tag v1.0 && git push --tags)
 #   5. Open a merge request against fdroiddata
