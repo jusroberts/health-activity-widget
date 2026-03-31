@@ -1,6 +1,7 @@
 package com.wiggletonabbey.healthactivitywidget
 
 import android.content.Context
+import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ExerciseSessionRecord
@@ -24,7 +25,8 @@ class HealthConnectRepository(private val context: Context) {
             HealthPermission.getReadPermission(ExerciseSessionRecord::class),
         )
 
-        private const val STEPS_THRESHOLD = 10_000L
+        const val DEFAULT_STEPS_THRESHOLD = 10_000L
+        private const val TAG = "HealthConnectRepo"
 
         /**
          * Human-readable name for a Health Connect exercise type.
@@ -133,7 +135,8 @@ class HealthConnectRepository(private val context: Context) {
                 pageToken = response.pageToken
             } while (pageToken != null)
             types.map { type -> type to exerciseTypeName(type) }.sortedBy { it.second }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "getExerciseTypes failed", e)
             emptyList()
         }
     }
@@ -147,6 +150,7 @@ class HealthConnectRepository(private val context: Context) {
         weeks: Int,
         showSteps: Boolean = true,
         disabledExerciseTypes: Set<Int> = emptySet(),
+        stepsThreshold: Long = DEFAULT_STEPS_THRESHOLD,
     ): Map<LocalDate, Set<String>> {
         if (!hasPermissions()) return emptyMap()
 
@@ -172,7 +176,7 @@ class HealthConnectRepository(private val context: Context) {
                     stepsToken = response.pageToken
                 } while (stepsToken != null)
                 dailySteps.forEach { (date, steps) ->
-                    if (steps >= STEPS_THRESHOLD) add(date, WidgetPreferences.STEPS_KEY)
+                    if (steps >= stepsThreshold) add(date, WidgetPreferences.STEPS_KEY)
                 }
             }
 
@@ -189,8 +193,8 @@ class HealthConnectRepository(private val context: Context) {
                 }
                 exerciseToken = response.pageToken
             } while (exerciseToken != null)
-        } catch (_: Exception) {
-            // Return partial results
+        } catch (e: Exception) {
+            Log.w(TAG, "getActivityData failed (returning partial results)", e)
         }
 
         return result
@@ -199,7 +203,7 @@ class HealthConnectRepository(private val context: Context) {
     private fun buildFilter(weeks: Int): TimeRangeFilter {
         val today = LocalDate.now()
         val zone = ZoneId.systemDefault()
-        val todayDow = today.dayOfWeek.value % 7
+        val todayDow = today.dayOfWeek.ordinal // Mon=0 … Sun=6
         val startDate = today.minusDays(todayDow.toLong()).minusWeeks((weeks - 1).toLong())
         return TimeRangeFilter.between(
             startDate.atStartOfDay(zone).toInstant(),

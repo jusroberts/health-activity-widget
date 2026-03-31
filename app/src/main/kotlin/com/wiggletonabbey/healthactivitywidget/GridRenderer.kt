@@ -40,9 +40,10 @@ object GridRenderer {
         backgroundStyle: Int = WidgetPreferences.BACKGROUND_TRANSPARENT,
     ): Bitmap {
         val today = LocalDate.now()
-        val todayDow = today.dayOfWeek.value % 7
+        val todayDow = today.dayOfWeek.ordinal // Mon=0 … Sun=6
         val startDate = today.minusDays(todayDow.toLong()).minusWeeks((weeks - 1).toLong())
 
+        require(weeks > 0) { "weeks must be > 0" }
         val gap = maxOf(1, (minOf(bitmapWidth.toFloat() / weeks, bitmapHeight.toFloat() / ROWS) * 0.12f).toInt())
         val cellW = (bitmapWidth  - (weeks - 1) * gap) / weeks
         val cellH = (bitmapHeight - (ROWS  - 1) * gap) / ROWS

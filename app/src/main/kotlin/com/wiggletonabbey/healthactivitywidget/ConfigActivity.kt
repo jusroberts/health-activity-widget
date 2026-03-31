@@ -14,7 +14,7 @@ import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
 import androidx.activity.ComponentActivity
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -74,7 +74,7 @@ class ConfigActivity : ComponentActivity() {
         }
 
         // Exercise rows — loaded asynchronously from Health Connect
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             val types = HealthConnectRepository(this@ConfigActivity)
                 .getExerciseTypes(HealthWidgetProvider.WEEKS)
 
@@ -104,7 +104,7 @@ class ConfigActivity : ComponentActivity() {
             refreshButton.text = "Refreshing…"
             val manager   = AppWidgetManager.getInstance(this)
             val component = ComponentName(this, HealthWidgetProvider::class.java)
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 manager.getAppWidgetIds(component).forEach { id ->
                     HealthWidgetProvider.updateWidget(this@ConfigActivity, manager, id)
                 }
@@ -135,15 +135,15 @@ class ConfigActivity : ComponentActivity() {
             }
             prefs.disabledExerciseTypes = currentDisabled
 
-            // Refresh all widget instances
+            // Refresh all widget instances, then close
             val manager   = AppWidgetManager.getInstance(this)
             val component = ComponentName(this, HealthWidgetProvider::class.java)
-            manager.getAppWidgetIds(component).forEach { id ->
-                CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
+                manager.getAppWidgetIds(component).forEach { id ->
                     HealthWidgetProvider.updateWidget(this@ConfigActivity, manager, id)
                 }
+                withContext(Dispatchers.Main) { finish() }
             }
-            finish()
         }
     }
 
@@ -153,7 +153,7 @@ class ConfigActivity : ComponentActivity() {
     }
 
     private fun checkHistoryPermission(warning: TextView) {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             val hasHistory = HealthConnectRepository(this@ConfigActivity).hasHistoryPermission()
             withContext(Dispatchers.Main) {
                 warning.visibility = if (hasHistory) View.GONE else View.VISIBLE
@@ -190,6 +190,7 @@ class ConfigActivity : ComponentActivity() {
 
         val colorCircle = buildColorCircle(activityKey, density)
 
+        // MaterialSwitch requires the Material Components library which is not otherwise a dependency.
         @Suppress("DEPRECATION")
         val switch = Switch(this).apply {
             isChecked = initialEnabled
@@ -217,7 +218,7 @@ class ConfigActivity : ComponentActivity() {
         applyCircle(view)
 
         view.setOnClickListener { v ->
-            val cur   = v.tag as Int
+            val cur   = v.tag as? Int ?: return@setOnClickListener
             val idx   = WidgetPreferences.PRESET_COLORS.indexOf(cur)
             val next  = WidgetPreferences.PRESET_COLORS[(idx + 1) % WidgetPreferences.PRESET_COLORS.size]
             v.tag = next
